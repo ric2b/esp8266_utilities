@@ -13,22 +13,18 @@ U8X8_SSD1306_64X48_ER_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);   // EastRising 0.
 
 const char* ssid = ".......";
 const char* password = ".......";
-
-const char* host = "api.kraken.com";
 const int httpsPort = 443;
+const char* host = "api.kraken.com";
+const char * url = "/0/public/Ticker";
+const char* post_data = "pair=XXBTZEUR\r\n";
 
-// Use web browser to view and copy
-// SHA1 fingerprint of the certificate
+// Use web browser to view and copy SHA1 fingerprint of the certificate.
 const char* fingerprint = "E6:DD:9B:E8:9E:2A:29:80:B0:E8:67:28:46:1C:90:08:3D:2A:AE:FF";
+
+const int sleepTimeS = 10;
 
 void setup(void)
 { 
-  /* U8g2 Project: SSD1306 Test Board */
-  //pinMode(10, OUTPUT);
-  //pinMode(9, OUTPUT);
-  //digitalWrite(10, 0);
-  //digitalWrite(9, 0);		
-  
   /* U8g2 Project: KS0108 Test Board */
   pinMode(16, OUTPUT);
   digitalWrite(16, 0);	
@@ -50,7 +46,10 @@ void setup(void)
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+}
 
+void loop(void)
+{
   // Use WiFiClientSecure class to create TLS connection
   WiFiClientSecure client;
   Serial.print("connecting to ");
@@ -60,13 +59,11 @@ void setup(void)
     return;
   }
 
-  if (client.verify(fingerprint, host)) {
+  if (client.verify(fingerprint, host))
     Serial.println("certificate matches");
-  } else {
+  else
     Serial.println("certificate doesn't match");
-  }
 
-  String url = "/0/public/Ticker";
   Serial.print("requesting URL: ");
   Serial.println(url);
 
@@ -76,10 +73,9 @@ void setup(void)
                "Content-Type: application/x-www-form-urlencoded\r\n" + 
                "Content-Length: 13\r\n" + 
                "\r\n" +
-               "pair=XXBTZEUR\r\n" + 
+               post_data + 
                "Connection: close\r\n\r\n");
 
-  Serial.println("request sent");
   while (client.connected()) {
     String line = client.readStringUntil('\n');
     if (line == "\r") {
@@ -89,39 +85,27 @@ void setup(void)
   }
   
   String contentLength = client.readStringUntil('\n');
-  DynamicJsonBuffer jsonBuffer(300);
   String payload = client.readStringUntil('\n');
-  JsonObject& root = jsonBuffer.parseObject(payload);
-
-  if (!root.success())
-    Serial.println("parseObject() failed");
-  const char* price = root["result"]["XXBTZEUR"]["c"][0];
   
   Serial.println("reply was:");
   Serial.println("==========");
-  Serial.println(price);
+  Serial.println(payload);
   Serial.println("==========");
-  Serial.println("closing connection");
+
+  DynamicJsonBuffer jsonBuffer(contentLength.toInt());
+  JsonObject& root = jsonBuffer.parseObject(payload);
+  const char * price = root["result"]["XXBTZEUR"]["c"][0];
+
+  if (!root.success())
+    Serial.println("Payload parsing failed");
+  else
+    Serial.println("Correctly parsed the payload");
 
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   u8x8.drawString(0,1,"BTC/EUR");
   u8x8.drawString(0,2,price);
-  u8x8.refreshDisplay();
-}
 
-void loop(void)
-{
-  u8x8.setFont(u8x8_font_chroma48medium8_r);
-  u8x8.drawString(0,1,"BTC/EUR");
-  //u8x8.drawString(0,2,price);
-  u8x8.refreshDisplay();		// for SSD1606  
-  delay(1000);
-  
-  /*
-  delay(1000);
-  u8x8.setPowerSave(1);
-  delay(1000);
-  u8x8.setPowerSave(0);
-  delay(1000);
-  */
+  Serial.println("ESP8266 going to sleep mode");
+  delay(sleepTimeS * 1000);
+  //ESP.deepSleep(sleepTimeS * 1000000);
 }
