@@ -16,7 +16,7 @@ const char* password = ".......";
 const int httpsPort = 443;
 const char* host = "api.kraken.com";
 const char * url = "/0/public/Ticker";
-const char* post_data = "pair=XXBTZEUR\r\n";
+const char* post_data = "pair=XXBTZEUR,XXMRZEUR\r\n";
 
 // Use web browser to view and copy SHA1 fingerprint of the certificate.
 const char* fingerprint = "E6:DD:9B:E8:9E:2A:29:80:B0:E8:67:28:46:1C:90:08:3D:2A:AE:FF";
@@ -94,20 +94,39 @@ void setup(void)
   else
     Serial.println("Correctly parsed the payload");
 
-  const char * price_str = root["result"]["XXBTZEUR"]["c"][0];
-  const char * volume_weighted_average_str = root["result"]["XXBTZEUR"]["p"][0];
-  const char * opening_price_str = root["result"]["XXBTZEUR"]["o"];
+  /* BTC / EUR */  
+  const char * BTC_price_str = root["result"]["XXBTZEUR"]["c"][0];
+  const char * BTC_volume_weighted_average_str = root["result"]["XXBTZEUR"]["p"][0];
+  const char * BTC_opening_price_str = root["result"]["XXBTZEUR"]["o"];
 
-  float price = ((String)price_str).toFloat();
-  float opening_price = ((String)opening_price_str).toFloat();
-  float daily_change = 100*(price - opening_price)/opening_price;
+  float BTC_price = ((String)BTC_price_str).toFloat();
+  float BTC_opening_price = ((String)BTC_opening_price_str).toFloat();
+  float BTC_daily_change = 100*(BTC_price - BTC_opening_price)/BTC_opening_price;
 
-  char daily_change_str[9];
-  dtostrf(abs(daily_change), 4, 1, daily_change_str);
+  char BTC_daily_change_str[9];
+  dtostrf(abs(BTC_daily_change), 4, 1, BTC_daily_change_str);
 
-  Serial.println(price);
-  Serial.println(opening_price);
-  Serial.println(daily_change_str);
+  Serial.println("BTC/EUR");
+  Serial.println(BTC_price);
+  Serial.println(BTC_opening_price);
+  Serial.println(BTC_daily_change_str);
+  
+  /* XMR / EUR */  
+  const char * XMR_price_str = root["result"]["XXMRZEUR"]["c"][0];
+  const char * XMR_volume_weighted_average_str = root["result"]["XXMRZEUR"]["p"][0];
+  const char * XMR_opening_price_str = root["result"]["XXMRZEUR"]["o"];
+
+  float XMR_price = ((String)XMR_price_str).toFloat();
+  float XMR_opening_price = ((String)XMR_opening_price_str).toFloat();
+  float XMR_daily_change = 100*(XMR_price - XMR_opening_price)/XMR_opening_price;
+
+  char XMR_daily_change_str[9];
+  dtostrf(abs(XMR_daily_change), 4, 1, XMR_daily_change_str);
+
+  Serial.println("XMR/EUR");
+  Serial.println(XMR_price);
+  Serial.println(XMR_opening_price);
+  Serial.println(XMR_daily_change_str);
   
   u8x8.begin();
   //u8x8.initDisplay();
@@ -117,16 +136,27 @@ void setup(void)
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   
   u8x8.drawString(0,0,"  BTC");
-  u8x8.drawString(0,1,price_str); u8x8.drawString(7,1," ");
-  u8x8.drawString(1,2,daily_change_str); 
+  u8x8.drawString(0,1,BTC_price_str); u8x8.drawString(7,1," ");
+  u8x8.drawString(1,2,BTC_daily_change_str); 
   // This is to force a plus sign and to always have them at the beggining 
   // (dtostrf only adds minus signs and their position changes with str width)
-  if(daily_change < 0) 
+  if(BTC_daily_change < 0) 
     u8x8.drawString(0,2, "-");
   else 
     u8x8.drawString(0,2, "+");
   u8x8.drawString(5,2, "%");
 
+  u8x8.drawString(0,3,"  XMR");
+  u8x8.drawString(0,4,XMR_price_str); u8x8.drawString(7,1," ");
+  u8x8.drawString(1,5,XMR_daily_change_str); 
+  // This is to force a plus sign and to always have them at the beggining 
+  // (dtostrf only adds minus signs and their position changes with str width)
+  if(XMR_daily_change < 0) 
+    u8x8.drawString(0,5, "-");
+  else 
+    u8x8.drawString(0,5, "+");
+  u8x8.drawString(5,5, "%");
+  
   Serial.println("ESP8266 going to sleep mode");
   // Must connect D0 to RST. When it wakes up, the device resets and memory is lost.
   ESP.deepSleep(sleepTimeS * 1000000);
