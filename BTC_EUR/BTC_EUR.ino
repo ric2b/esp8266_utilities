@@ -88,21 +88,44 @@ void setup(void)
 
   DynamicJsonBuffer jsonBuffer(contentLength.toInt());
   JsonObject& root = jsonBuffer.parseObject(payload);
-  const char * price = root["result"]["XXBTZEUR"]["c"][0];
 
   if (!root.success())
     Serial.println("Payload parsing failed");
   else
     Serial.println("Correctly parsed the payload");
 
-  //u8x8.begin();
-  u8x8.initDisplay();
-  u8x8.setPowerSave(0);
+  const char * price_str = root["result"]["XXBTZEUR"]["c"][0];
+  const char * volume_weighted_average_str = root["result"]["XXBTZEUR"]["p"][0];
+  const char * opening_price_str = root["result"]["XXBTZEUR"]["o"];
+
+  float price = ((String)price_str).toFloat();
+  float opening_price = ((String)opening_price_str).toFloat();
+  float daily_change = 100*(price - opening_price)/opening_price;
+
+  char daily_change_str[9];
+  dtostrf(abs(daily_change), 4, 1, daily_change_str);
+
+  Serial.println(price);
+  Serial.println(opening_price);
+  Serial.println(daily_change_str);
+  
+  u8x8.begin();
+  //u8x8.initDisplay();
+  //u8x8.setPowerSave(0);
   u8x8.setContrast(30);
 
   u8x8.setFont(u8x8_font_chroma48medium8_r);
-  u8x8.drawString(0,1,"BTC/EUR");
-  u8x8.drawString(0,2,price);
+  
+  u8x8.drawString(0,0,"  BTC");
+  u8x8.drawString(0,1,price_str); u8x8.drawString(7,1," ");
+  u8x8.drawString(1,2,daily_change_str); 
+  // This is to force a plus sign and to always have them at the beggining 
+  // (dtostrf only adds minus signs and their position changes with str width)
+  if(daily_change < 0) 
+    u8x8.drawString(0,2, "-");
+  else 
+    u8x8.drawString(0,2, "+");
+  u8x8.drawString(5,2, "%");
 
   Serial.println("ESP8266 going to sleep mode");
   // Must connect D0 to RST. When it wakes up, the device resets and memory is lost.
