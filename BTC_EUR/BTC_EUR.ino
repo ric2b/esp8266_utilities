@@ -10,6 +10,8 @@
 
 U8X8_SSD1306_64X48_ER_HW_I2C u8x8(/* reset=*/ U8X8_PIN_NONE);   // EastRising 0.66" OLED breakout board, Uno: A4=SDA, A5=SCL, 5V powered
 
+const float EUR_spent = ;
+const float BTC_owned = ;
 
 const char* ssid = ".......";
 const char* password = ".......";
@@ -127,6 +129,16 @@ void setup(void)
     u8x8.drawString(0,2, "+");
   u8x8.drawString(5,2, "%");
 
+  char profits_str[9];
+  float profits = BTC_owned*price - EUR_spent;  
+  dtostrf(profits, 6, 1, profits_str);
+
+  Serial.println("Profits (EUR)");
+  Serial.println(profits);
+
+  u8x8.drawString(0,4, "Profit:"); 
+  u8x8.drawUTF8(0,5, profits_str); u8x8.drawString(6,5, "E");
+  
   Serial.println("ESP8266 going to sleep mode");
   // Must connect D0 to RST. When it wakes up, the device resets and memory is lost.
   ESP.deepSleep(sleepTimeS * 1000000);
